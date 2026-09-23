@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Excel Minds Academy PU College · Hassan</title>
   <meta name="description" content="Excel Minds Academy PU College — pre-university education at Kenchatavalli, Hassan, on the Bengaluru–Mangaluru highway. Learn today. Lead tomorrow.">
-  <meta name="theme-color" content="#070D1F">
+  <meta name="theme-color" content="#F8F7F2">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Excel Minds Academy PU College · Hassan">
   <meta property="og:description" content="Learn today. Lead tomorrow. Pre-university education at Kenchatavalli, Hassan.">
@@ -139,7 +139,7 @@
     </section>
 
     <!-- ============ THE EXCEL MINDS WAY (horizontal) ============ -->
-    <section class="way" id="learning" aria-labelledby="way-title">
+    <section class="way" id="learning" data-nav="light" aria-labelledby="way-title">
       <div class="way__pin">
         <div class="way__rail">
           <div class="way__intro">
@@ -203,12 +203,12 @@
       <div class="gallery-head container">
         <p class="eyebrow eyebrow--dark">Life at Excel Minds</p>
         <div class="gallery-ctrl">
-          <span class="gallery-hint" aria-hidden="true">Drag to explore</span>
+          <span class="gallery-hint" aria-hidden="true">Scroll to explore</span>
           <button class="round-btn" type="button" data-gal="prev" aria-label="Previous images"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
           <button class="round-btn" type="button" data-gal="next" aria-label="Next images"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         </div>
       </div>
-      <div class="gallery" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Campus life photographs — drag, or use the arrow keys">
+      <div class="gallery" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Campus life photographs — scroll sideways, or use the arrow keys">
         <ul class="gallery__track">
           <li class="card"><img src="assets/img/classroom-720.webp" alt="Classroom session with a teacher guiding students" width="720" height="1024" loading="lazy" draggable="false"><span>Classroom</span></li>
           <li class="card"><img src="assets/img/board-720.webp" alt="A teacher in a brown blazer stands at the blackboard facing the class" width="720" height="1088" loading="lazy" draggable="false"><span>At the board</span></li>
@@ -225,7 +225,7 @@
     </section>
 
     <!-- ============ VISIT / CONTACT / CLOSE ============ -->
-    <section class="visit" id="visit" aria-labelledby="visit-title">
+    <section class="visit" id="visit" data-nav="light" aria-labelledby="visit-title">
       <div class="container">
         <div class="visit__head">
           <div>
@@ -278,8 +278,18 @@
       </div>
 
       <div class="closer" aria-hidden="true">
-        <div class="closer__row" data-closer="1"><span>Learn today</span><b>✦</b><span>Learn today</span><b>✦</b></div>
-        <div class="closer__row closer__row--outline" data-closer="-1"><span><em>Lead tomorrow</em></span><b>✦</b><span><em>Lead tomorrow</em></span><b>✦</b></div>
+        <div class="closer__line">
+          <div class="closer__row"><span>Learn today</span><b>✦</b><span>Learn today</span><b>✦</b></div>
+          <div class="closer__row"><span>Learn today</span><b>✦</b><span>Learn today</span><b>✦</b></div>
+          <div class="closer__row"><span>Learn today</span><b>✦</b><span>Learn today</span><b>✦</b></div>
+          <div class="closer__row"><span>Learn today</span><b>✦</b><span>Learn today</span><b>✦</b></div>
+        </div>
+        <div class="closer__line closer__line--back">
+          <div class="closer__row closer__row--outline"><span><em>Lead tomorrow</em></span><b>✦</b><span><em>Lead tomorrow</em></span><b>✦</b></div>
+          <div class="closer__row closer__row--outline"><span><em>Lead tomorrow</em></span><b>✦</b><span><em>Lead tomorrow</em></span><b>✦</b></div>
+          <div class="closer__row closer__row--outline"><span><em>Lead tomorrow</em></span><b>✦</b><span><em>Lead tomorrow</em></span><b>✦</b></div>
+          <div class="closer__row closer__row--outline"><span><em>Lead tomorrow</em></span><b>✦</b><span><em>Lead tomorrow</em></span><b>✦</b></div>
+        </div>
       </div>
 
       <footer class="footer container">
@@ -289,8 +299,6 @@
       </footer>
     </section>
   </main>
-
-  <div class="cursor" aria-hidden="true"><span>Drag</span></div>
 
   <script src="assets/vendor/gsap.min.js" defer></script>
   <script src="assets/vendor/ScrollTrigger.min.js" defer></script>

@@ -116,14 +116,18 @@
     }
   }
 
-  /* ---------------- draggable gallery (marquee 2) ---------------- */
+  /* ---------------- gallery (marquee 2) ----------------
+     Natively scrollable: the browser owns the gesture, so a one-finger swipe
+     pans the strip, a vertical swipe still scrolls the page, and there is no
+     custom cursor. A slow drift keeps it alive, and the strip wraps by
+     rebasing scrollLeft onto an identical clone. */
   function gallery() {
     const root = $('.gallery');
-    const track = $('.gallery__track', root);
+    const track = root && $('.gallery__track', root);
     if (!root || !track) return;
     const originals = [...track.children];
 
-    // Clone the set until the strip is comfortably wider than the viewport.
+    // Three copies: one on screen, one of slack either side to wrap into.
     const addSet = () => originals.forEach((li) => {
       const c = li.cloneNode(true);
       c.setAttribute('aria-hidden', 'true');
@@ -132,49 +136,44 @@
     });
     addSet(); addSet();
 
-    let setW = 0;
-    const measure = () => { setW = track.children[originals.length].offsetLeft - originals[0].offsetLeft; };
+    let setW = 0, expected = -1, held = 0;
+    const setLeft = (v) => { expected = v; root.scrollLeft = v; };
+    const hold = (ms) => { held = Math.max(held, performance.now() + ms); };
+
+    const measure = () => {
+      setW = track.children[originals.length].offsetLeft - originals[0].offsetLeft;
+      if (setW > 0 && (root.scrollLeft < setW * 0.5 || root.scrollLeft > setW * 1.5)) setLeft(setW);
+    };
     measure();
     addEventListener('resize', measure);
+    addEventListener('load', measure);
 
-    const wrap = (v) => (setW ? ((v % setW) - setW) % setW : v);
-    const cardStep = () => originals[1].offsetLeft - originals[0].offsetLeft;
-
-    let x = 0, momentum = 0, dragging = false, moved = 0, lastX = 0, lastT = 0, vel = 0;
-    let hover = false, focus = false, visible = true, glide = null;
-    const autoSpeed = reduce ? 0 : 0.03; // px per ms
-
-    root.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0) return;
-      dragging = true; moved = 0; glide = null; momentum = 0;
-      lastX = e.clientX; lastT = performance.now(); vel = 0;
-      root.classList.add('is-dragging');
-    });
-    root.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const now = performance.now();
-      const dx = e.clientX - lastX;
-      if (Math.abs(dx) > 0 && !root.hasPointerCapture(e.pointerId)) root.setPointerCapture(e.pointerId);
-      x += dx; moved += Math.abs(dx);
-      vel = dx / Math.max(1, now - lastT);
-      lastX = e.clientX; lastT = now;
-    });
-    const end = () => {
-      if (!dragging) return;
-      dragging = false;
-      momentum = reduce ? 0 : vel * 16;
-      root.classList.remove('is-dragging');
+    // Keep the position inside the middle copy so either direction can run on.
+    const normalize = () => {
+      if (setW <= 0) return;
+      const sl = root.scrollLeft;
+      if (sl > setW * 1.5) setLeft(sl - setW);
+      else if (sl < setW * 0.5) setLeft(sl + setW);
     };
-    root.addEventListener('pointerup', end);
-    root.addEventListener('pointercancel', end);
-    root.addEventListener('lostpointercapture', end);
-    root.addEventListener('click', (e) => { if (moved > 6) { e.preventDefault(); e.stopPropagation(); } }, true);
+
+    // A scroll we did not write is the visitor's — stand back until they settle.
+    root.addEventListener('scroll', () => {
+      if (expected < 0 || Math.abs(root.scrollLeft - expected) > 2) hold(900);
+      normalize();
+    }, { passive: true });
+    root.addEventListener('pointerdown', () => hold(900));
+
+    let hover = false, focus = false, visible = true;
     root.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hover = true; });
     root.addEventListener('pointerleave', () => { hover = false; });
     root.addEventListener('focusin', () => { focus = true; });
     root.addEventListener('focusout', () => { focus = false; });
 
-    const step = (dir) => { glide = { from: x, to: x - dir * cardStep() * 2, t0: performance.now(), dur: reduce ? 1 : 900 }; momentum = 0; };
+    const cardStep = () => originals[1].offsetLeft - originals[0].offsetLeft;
+    const step = (dir) => {
+      hold(900);
+      root.scrollBy({ left: dir * cardStep() * 2, behavior: reduce ? 'auto' : 'smooth' });
+    };
     $$('[data-gal]').forEach((b) => b.addEventListener('click', () => step(b.dataset.gal === 'next' ? 1 : -1)));
     root.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
@@ -183,44 +182,19 @@
 
     new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(root);
 
-    const easeOut = (t) => 1 - Math.pow(2, -10 * t);
-    let prev = performance.now();
+    if (reduce) return;
+    const speed = 0.03; // px per ms
+    let prev = performance.now(), carry = 0;
     const loop = (now) => {
       const dt = Math.min(64, now - prev); prev = now;
-      if (visible) {
-        if (glide) {
-          const t = Math.min(1, (now - glide.t0) / glide.dur);
-          x = glide.from + (glide.to - glide.from) * easeOut(t);
-          if (t === 1) glide = null;
-        } else if (!dragging) {
-          x += momentum; momentum *= 0.93;
-          if (Math.abs(momentum) < 0.05) momentum = 0;
-          if (!hover && !focus) x -= autoSpeed * dt;
-        }
-        const wrapped = wrap(x);
-        if (glide) { glide.from += wrapped - x; glide.to += wrapped - x; }
-        x = wrapped;
-        track.style.transform = `translate3d(${x}px,0,0)`;
-      }
+      if (visible && !hover && !focus && now > held) {
+        carry += speed * dt;
+        const whole = Math.floor(carry);
+        if (whole) { carry -= whole; setLeft(root.scrollLeft + whole); normalize(); }
+      } else carry = 0;
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
-
-    // Drag cursor for mouse users
-    const cursor = $('.cursor');
-    if (hasGsap && finePointer && cursor) {
-      const cx = gsap.quickTo(cursor, 'x', { duration: 0.45, ease: 'power3' });
-      const cy = gsap.quickTo(cursor, 'y', { duration: 0.45, ease: 'power3' });
-      root.addEventListener('pointermove', (e) => { cx(e.clientX); cy(e.clientY); });
-      root.addEventListener('pointerenter', (e) => {
-        gsap.set(cursor, { x: e.clientX, y: e.clientY });
-        gsap.to(cursor, { scale: 1, opacity: 1, duration: 0.5, ease: 'expo.out' });
-        root.style.cursor = 'none';
-      });
-      root.addEventListener('pointerleave', () => gsap.to(cursor, { scale: 0, opacity: 0, duration: 0.4, ease: 'expo.out' }));
-      root.addEventListener('pointerdown', () => gsap.to(cursor, { scale: 0.8, duration: 0.3 }));
-      root.addEventListener('pointerup', () => gsap.to(cursor, { scale: 1, duration: 0.4 }));
-    }
   }
   gallery();
 
@@ -469,15 +443,6 @@
   gsap.from('.gallery .card', {
     y: 60, opacity: 0, duration: 1.2, stagger: 0.05, ease: 'expo.out',
     scrollTrigger: { trigger: '.gallery', start: 'top 90%', once: true },
-  });
-
-  /* ---------------- closing type ---------------- */
-  $$('[data-closer]').forEach((row) => {
-    const dir = parseFloat(row.dataset.closer);
-    gsap.fromTo(row, { xPercent: dir > 0 ? 0 : -8 }, {
-      xPercent: dir > 0 ? -22 : 10, ease: 'none',
-      scrollTrigger: { trigger: '.closer', start: 'top bottom', end: 'bottom top', scrub: true },
-    });
   });
 
   /* ---------------- magnetic buttons ---------------- */
